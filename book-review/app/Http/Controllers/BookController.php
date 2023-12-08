@@ -39,7 +39,7 @@ class BookController extends Controller
                 $books->get()
             );
 
-        return view('books.index', ['books' => $books]);
+        return view('books.index', ['books' => Book::latest()->paginate(10)]);
     }
 
     /**
