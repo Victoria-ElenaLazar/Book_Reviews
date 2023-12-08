@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Book;
 use Illuminate\Http\Request;
+use Illuminate\Pagination\Paginator;
 
 
 class BookController extends Controller
@@ -17,8 +18,10 @@ class BookController extends Controller
         $filter = $request->input('filter', '');
 
         $books = Book::when(
-            $title, fn($query, $title) => $query->title($title)
+            $title,
+            fn($query, $title) => $query->title($title)
         );
+
         $books = match ($filter) {
             'popular_last_month' => $books->popularLastMonth(),
             'popular_last_6months' => $books->popularLast6Months(),
@@ -26,10 +29,15 @@ class BookController extends Controller
             'highest_rated_last_6months' => $books->highestRatedLast6Months(),
             default => $books->latest()->withAvgRating()->withReviewsCount()
         };
-        $books = $books->paginate(10);
 
         $cacheKey = 'books:' . $filter . ':' . $title;
-        $books = cache()->remember($cacheKey, 3600, fn() => $books->paginate(10));
+        $books =
+            cache()->remember(
+                $cacheKey,
+                3600,
+                fn() =>
+                $books->get()
+            );
 
         return view('books.index', ['books' => $books]);
     }
